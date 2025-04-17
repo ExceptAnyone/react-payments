@@ -14031,7 +14031,7 @@ function CardNumberInput({
     /* @__PURE__ */ jsx$1(Input.Group, { id: "card-number", children: /* @__PURE__ */ jsxs("div", { css: inputContainer, children: [
       /* @__PURE__ */ jsx$1(Input.Label, { children: "카드 번호" }),
       /* @__PURE__ */ jsxs("article", { css: inputSection, children: [
-        /* @__PURE__ */ jsx$1(Input.Group, { id: "card-number-first", children: /* @__PURE__ */ jsx$1(
+        /* @__PURE__ */ jsx$1(Input.Group, { id: "card-number", children: /* @__PURE__ */ jsx$1(
           Input,
           {
             type: "text",
@@ -14127,7 +14127,7 @@ function CardPeriodInput({
     /* @__PURE__ */ jsx$1(Input.Group, { id: "card-expiration", children: /* @__PURE__ */ jsxs("div", { css: inputContainer, children: [
       /* @__PURE__ */ jsx$1(Input.Label, { children: "유효기간" }),
       /* @__PURE__ */ jsxs("article", { css: inputSection, children: [
-        /* @__PURE__ */ jsx$1(Input.Group, { id: "card-expiration-month", children: /* @__PURE__ */ jsx$1(
+        /* @__PURE__ */ jsx$1(Input.Group, { id: "card-expiration", children: /* @__PURE__ */ jsx$1(
           Input,
           {
             type: "text",
