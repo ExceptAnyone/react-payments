@@ -1956,6 +1956,7 @@ var Emotion = /* @__PURE__ */ withEmotionCache(function(props, cache, ref) {
   }), /* @__PURE__ */ reactExports.createElement(WrappedComponent, newProps));
 });
 var Emotion$1 = Emotion;
+var Fragment = jsxRuntimeExports.Fragment;
 var jsx$1 = function jsx(type, props, key) {
   if (!hasOwn.call(props, "css")) {
     return jsxRuntimeExports.jsx(type, props, key);
@@ -19738,12 +19739,20 @@ const slideInUp = keyframes`
     transform: translateY(0);
   }
 `;
+const funnelComponentLayout = css`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+
+  gap: 1.6rem;
+  animation: ${slideInUp} 0.5s ease-out forwards;
+`;
 const cardFormCompleteLayout = css`
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 100vh;
+  min-height: 100dvh;
   padding: 2rem;
   gap: 2rem;
 
@@ -19803,7 +19812,7 @@ const CardFormComplete = () => {
   const { goHome } = useEasyNavigate();
   const [searchParams] = useSearchParams();
   const { cardNumber, cardBrand } = Object.fromEntries(searchParams);
-  const handleGoToHome = () => {
+  const handleButtonClick = () => {
     goHome();
   };
   return /* @__PURE__ */ jsx$1("section", { css: cardFormCompleteLayout, children: /* @__PURE__ */ jsxs("div", { css: contentStyle, children: [
@@ -19811,7 +19820,7 @@ const CardFormComplete = () => {
       /* @__PURE__ */ jsx$1(Title.Text, { children: "카드 등록이 완료되었습니다!" }),
       /* @__PURE__ */ jsx$1(Title.SubTitle, { children: "카드 정보가 성공적으로 처리되었습니다." })
     ] }),
-    /* @__PURE__ */ jsx$1("div", { css: detailsStyle, children: /* @__PURE__ */ jsxs("p", { children: [
+    /* @__PURE__ */ jsxs("div", { css: detailsStyle, children: [
       /* @__PURE__ */ jsx$1("span", { css: cardDetailText, children: "카드 종류:" }),
       /* @__PURE__ */ jsxs("div", { css: cardDetailContainer, children: [
         /* @__PURE__ */ jsxs("span", { css: cardDetailText, children: [
@@ -19820,8 +19829,8 @@ const CardFormComplete = () => {
         ] }),
         /* @__PURE__ */ jsx$1("span", { css: cardDetailText, children: cardBrand.toUpperCase() })
       ] })
-    ] }) }),
-    /* @__PURE__ */ jsx$1(Button, { variant: "large", onClick: handleGoToHome, children: "처음으로 돌아가기" })
+    ] }),
+    /* @__PURE__ */ jsx$1(Button, { variant: "large", onClick: handleButtonClick, children: "처음으로 돌아가기" })
   ] }) });
 };
 function assert(condition, error = new Error()) {
@@ -19838,10 +19847,7 @@ const Funnel = (props) => {
   const validChildren = reactExports.Children.toArray(children).filter(reactExports.isValidElement).filter(({ props: props2 }) => steps.includes(props2.name));
   const targetStep = validChildren.find((child) => child.props.name === step);
   assert(targetStep != null, `${step} step 컴포넌트를 찾지 못했습니다.`);
-  const animationStyle = css`
-    animation: ${slideInUp} 0.5s ease-out forwards;
-  `;
-  return /* @__PURE__ */ jsx$1("div", { css: animationStyle, children: targetStep });
+  return /* @__PURE__ */ jsx$1("div", { css: funnelComponentLayout, children: targetStep });
 };
 const Step = (props) => {
   const { onNext, children } = props;
@@ -19901,16 +19907,6 @@ function Input(props) {
 }
 Input.Group = InputGroup;
 Input.Label = Label;
-const cardNumberInputLayout = css`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-
-  width: 100%;
-  padding: 3.1rem;
-  gap: 1.6rem;
-`;
 const CARD_NUMBER_ERROR = {
   onlyNumbers: "숫자만 입력 가능합니다."
 };
@@ -20240,7 +20236,7 @@ const useCardPassword = () => {
 const cardBrandNames = {
   bc: "BC카드",
   shinhan: "신한카드",
-  kakao: "카카오뱅크",
+  kakao: "카카오카드",
   hyundai: "현대카드",
   woori: "우리카드",
   lotte: "롯데카드",
@@ -20317,6 +20313,39 @@ const useCard = () => {
   }
   return context;
 };
+const isMasterCard = (cardNumber) => {
+  if (!cardNumber) return false;
+  const cardNumberStr = cardNumber.toString();
+  return CARD_TYPE.masterCard.startsWith.some(
+    (prefix2) => cardNumberStr.startsWith(prefix2)
+  );
+};
+const isVisaCard = (cardNumber) => {
+  if (!cardNumber) return false;
+  const cardNumberStr = cardNumber.toString();
+  return cardNumberStr.startsWith(CARD_TYPE.visa.startsWith);
+};
+const identifyCardType = (cardNumber) => {
+  const { first } = cardNumber;
+  if (isMasterCard(first)) return "mastercard";
+  if (isVisaCard(first)) return "visa";
+  return null;
+};
+const handleAutoFocus = (e, maxLength, fieldMappings) => {
+  const { name, value } = e.target;
+  if (value.length === maxLength && fieldMappings[name]) {
+    const nextInput = document.querySelector(
+      `input[name="${fieldMappings[name]}"]`
+    );
+    if (nextInput instanceof HTMLInputElement) {
+      nextInput.focus();
+    }
+  }
+};
+const maskCardValue = (value, mask) => {
+  if (!value) return "";
+  return mask ? "*".repeat(value.length) : value;
+};
 function CardNumberInput(props) {
   var _a, _b, _c, _d;
   const { onNext } = props;
@@ -20331,7 +20360,16 @@ function CardNumberInput(props) {
   if (isCardNumberValid()) {
     onNext();
   }
-  return /* @__PURE__ */ jsxs("div", { css: cardNumberInputLayout, children: [
+  const handleInputChange = (e) => {
+    handleCardNumberChange(e);
+    const fieldMappings = {
+      first: "second",
+      second: "third",
+      third: "forth"
+    };
+    handleAutoFocus(e, CARD_NUMBER.maxLength, fieldMappings);
+  };
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsxs(Title, { children: [
       /* @__PURE__ */ jsx$1(Title.Text, { children: "결제할 카드 번호를 입력해 주세요" }),
       /* @__PURE__ */ jsx$1(Title.SubTitle, { children: "본인 명의의 카드만 결제 가능합니다." })
@@ -20346,7 +20384,7 @@ function CardNumberInput(props) {
             name: "first",
             maxLength: CARD_NUMBER.maxLength,
             value: (_a = cardNumber.first) == null ? void 0 : _a.toString(),
-            onChange: handleCardNumberChange,
+            onChange: handleInputChange,
             css: errorState.first ? errorInputStyle : void 0
           }
         ) }),
@@ -20357,7 +20395,7 @@ function CardNumberInput(props) {
             name: "second",
             maxLength: CARD_NUMBER.maxLength,
             value: (_b = cardNumber.second) == null ? void 0 : _b.toString(),
-            onChange: handleCardNumberChange,
+            onChange: handleInputChange,
             css: errorState.second ? errorInputStyle : void 0
           }
         ) }),
@@ -20368,7 +20406,7 @@ function CardNumberInput(props) {
             name: "third",
             maxLength: CARD_NUMBER.maxLength,
             value: (_c = cardNumber.third) == null ? void 0 : _c.toString(),
-            onChange: handleCardNumberChange,
+            onChange: handleInputChange,
             css: errorState.third ? errorInputStyle : void 0
           }
         ) }),
@@ -20379,7 +20417,7 @@ function CardNumberInput(props) {
             name: "forth",
             maxLength: CARD_NUMBER.maxLength,
             value: (_d = cardNumber.forth) == null ? void 0 : _d.toString(),
-            onChange: handleCardNumberChange,
+            onChange: handleInputChange,
             css: errorState.forth ? errorInputStyle : void 0
           }
         ) })
@@ -20390,7 +20428,6 @@ function CardNumberInput(props) {
 }
 const dropdownContainer = css`
   position: relative;
-  padding: 3.1rem;
   width: 100%;
 `;
 const dropdownSelect = css`
@@ -20407,8 +20444,8 @@ const dropdownSelect = css`
 `;
 const dropdownArrow = css`
   position: absolute;
-  right: 4rem;
-  top: 40%;
+  right: 1rem;
+  top: 25%;
   pointer-events: none;
 `;
 const dropdownOption = css`
@@ -20475,16 +20512,6 @@ const DropdownOption = ({ value, children, ...props }) => {
   return /* @__PURE__ */ jsx$1("option", { value, css: dropdownOption, ...props, children });
 };
 Dropdown.Option = DropdownOption;
-const cardPeriodInputLayout = css`
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: flex-start;
-
-  width: 100%;
-  padding: 3.1rem;
-  gap: 1.6rem;
-`;
 function CardPeriodInput(props) {
   const { onNext } = props;
   const {
@@ -20498,7 +20525,14 @@ function CardPeriodInput(props) {
   if (isCardExpirationValid()) {
     onNext == null ? void 0 : onNext();
   }
-  return /* @__PURE__ */ jsxs("div", { css: cardPeriodInputLayout, children: [
+  const handleMonthChange = (e) => {
+    handleCardExpirationChange.month(e.target.value);
+    const fieldMappings = {
+      month: "year"
+    };
+    handleAutoFocus(e, CARD_EXPIRATION.monthLength, fieldMappings);
+  };
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsxs(Title, { children: [
       /* @__PURE__ */ jsx$1(Title.Text, { children: "카드 유효기간을 입력해 주세요" }),
       /* @__PURE__ */ jsx$1(Title.SubTitle, { children: "월/년도(MMYY)를 순서대로 입력해 주세요." })
@@ -20513,7 +20547,7 @@ function CardPeriodInput(props) {
             name: "month",
             maxLength: CARD_EXPIRATION.monthLength,
             value: cardExpirationDate.month,
-            onChange: (e) => handleCardExpirationChange.month(e.target.value),
+            onChange: handleMonthChange,
             css: errorState.month ? errorInputStyle : void 0
           }
         ) }),
@@ -20546,7 +20580,7 @@ function CardCVCInput(props) {
   if (isCardCVCValid()) {
     onNext == null ? void 0 : onNext();
   }
-  return /* @__PURE__ */ jsxs("div", { css: cardPeriodInputLayout, children: [
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
     /* @__PURE__ */ jsx$1(Title, { children: /* @__PURE__ */ jsx$1(Title.Text, { children: "CVC 번호를 입력해 주세요" }) }),
     /* @__PURE__ */ jsx$1(Input.Group, { id: "card-cvc", children: /* @__PURE__ */ jsxs("div", { css: inputContainer, children: [
       /* @__PURE__ */ jsx$1(Input.Label, { children: "CVC" }),
@@ -20619,24 +20653,6 @@ const dynamicCardStyle = (cardBrandColor) => css`
   ${cardLayout}
   background-color: ${cardBrandColor};
 `;
-const isMasterCard = (cardNumber) => {
-  if (!cardNumber) return false;
-  const cardNumberStr = cardNumber.toString();
-  return CARD_TYPE.masterCard.startsWith.some(
-    (prefix2) => cardNumberStr.startsWith(prefix2)
-  );
-};
-const isVisaCard = (cardNumber) => {
-  if (!cardNumber) return false;
-  const cardNumberStr = cardNumber.toString();
-  return cardNumberStr.startsWith(CARD_TYPE.visa.startsWith);
-};
-const identifyCardType = (cardNumber) => {
-  const { first } = cardNumber;
-  if (isMasterCard(first)) return "mastercard";
-  if (isVisaCard(first)) return "visa";
-  return null;
-};
 function Card() {
   const { cardNumber, cardExpirationDate, cardBrandColor } = useCard();
   const cardTypeId = identifyCardType(cardNumber);
@@ -20647,13 +20663,17 @@ function Card() {
   };
   const cardTypeImage = getCardTypeImage();
   const hasCardExpirationDate = cardExpirationDate.month || cardExpirationDate.year;
+  const getDisplayCardValue = (value, fieldName) => {
+    const shouldMask = fieldName === "third" || fieldName === "forth";
+    return maskCardValue(value, shouldMask);
+  };
   return /* @__PURE__ */ jsxs("section", { css: dynamicCardStyle(cardBrandColor), children: [
     /* @__PURE__ */ jsxs("div", { css: cardContainer, children: [
       /* @__PURE__ */ jsx$1("div", { css: cardFrame }),
       cardTypeImage && /* @__PURE__ */ jsx$1("div", { children: /* @__PURE__ */ jsx$1("img", { css: cardType, src: cardTypeImage, alt: "카드 타입" }) })
     ] }),
     /* @__PURE__ */ jsxs("div", { css: cardContentContainer, children: [
-      /* @__PURE__ */ jsx$1("div", { css: cardContent, children: Object.values(cardNumber).map((value, index) => /* @__PURE__ */ jsx$1("span", { css: cardContentText, children: value }, index)) }),
+      /* @__PURE__ */ jsx$1("div", { css: cardContent, children: Object.entries(cardNumber).map(([fieldName, value], index) => /* @__PURE__ */ jsx$1("span", { css: cardContentText, children: getDisplayCardValue(value == null ? void 0 : value.toString(), fieldName) }, index)) }),
       /* @__PURE__ */ jsx$1("div", { css: cardContent, children: hasCardExpirationDate && /* @__PURE__ */ jsxs("span", { css: cardContentText, children: [
         cardExpirationDate.month,
         "/",
@@ -20662,11 +20682,6 @@ function Card() {
     ] })
   ] });
 }
-const cardPasswordInputLayout = css`
-  display: flex;
-  flex-direction: column;
-  gap: 1.2rem;
-`;
 function CardPasswordInput() {
   const { goPage } = useEasyNavigate();
   const {
@@ -20685,7 +20700,8 @@ function CardPasswordInput() {
     goPage(`/complete?cardNumber=${cardNumberFirst}&cardBrand=${cardBrand}`);
   }, [goPage, cardNumber, selectedCardBrand]);
   const isCompleteForm = (cardPassword == null ? void 0 : cardPassword.length) === CARD_LENGTH.password;
-  return /* @__PURE__ */ jsxs("div", { css: cardPasswordInputLayout, children: [
+  return /* @__PURE__ */ jsxs(Fragment, { children: [
+    " ",
     /* @__PURE__ */ jsxs(Title, { children: [
       /* @__PURE__ */ jsx$1(Title.Text, { children: "카드 비밀번호를 입력해 주세요" }),
       /* @__PURE__ */ jsx$1(Title.SubTitle, { children: "앞의 2자리를 입력해주세요" })
@@ -20721,8 +20737,8 @@ const cardPaymentLayout = css`
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 100vh;
   padding: 20px;
+  min-height: 100vh;
 `;
 const cardPaymentContentContainer = css`
   display: flex;
@@ -20730,10 +20746,8 @@ const cardPaymentContentContainer = css`
   justify-content: center;
   align-items: center;
   width: 100%;
+  max-width: 36rem;
   gap: 6rem;
-`;
-const cardPaymentFormContainer = css`
-  width: 100%;
 `;
 const CardPaymentPage = () => {
   const { Funnel: Funnel2, setStep } = useFunnel({
@@ -20742,7 +20756,7 @@ const CardPaymentPage = () => {
   });
   return /* @__PURE__ */ jsx$1("div", { css: cardPaymentLayout, children: /* @__PURE__ */ jsxs("div", { css: cardPaymentContentContainer, children: [
     /* @__PURE__ */ jsx$1(Card, {}),
-    /* @__PURE__ */ jsx$1("div", { css: cardPaymentFormContainer, children: /* @__PURE__ */ jsxs(Funnel2, { children: [
+    /* @__PURE__ */ jsxs(Funnel2, { children: [
       /* @__PURE__ */ jsx$1(Funnel2.Step, { name: STEPS[0], children: /* @__PURE__ */ jsx$1(CardNumberInput, { onNext: () => setStep(STEPS[1]) }) }),
       /* @__PURE__ */ jsxs(Funnel2.Step, { name: STEPS[1], children: [
         /* @__PURE__ */ jsx$1(Title, { children: /* @__PURE__ */ jsx$1(Title.Text, { children: "카드사를 선택해주세요" }) }),
@@ -20764,11 +20778,11 @@ const CardPaymentPage = () => {
           }
         )
       ] }),
-      /* @__PURE__ */ jsx$1(Funnel2.Step, { name: STEPS[2], children: /* @__PURE__ */ jsx$1("div", { children: /* @__PURE__ */ jsx$1(CardPeriodInput, { onNext: () => setStep(STEPS[3]) }) }) }),
+      /* @__PURE__ */ jsx$1(Funnel2.Step, { name: STEPS[2], children: /* @__PURE__ */ jsx$1(CardPeriodInput, { onNext: () => setStep(STEPS[3]) }) }),
       /* @__PURE__ */ jsx$1(Funnel2.Step, { name: STEPS[3], onNext: () => {
       }, children: /* @__PURE__ */ jsx$1(CardCVCInput, { onNext: () => setStep(STEPS[4]) }) }),
       /* @__PURE__ */ jsx$1(Funnel2.Step, { name: STEPS[4], children: /* @__PURE__ */ jsx$1(CardPasswordInput, {}) })
-    ] }) })
+    ] })
   ] }) });
 };
 const router = createBrowserRouter([
